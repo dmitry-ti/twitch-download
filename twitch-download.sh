@@ -4,6 +4,7 @@ STATUS_OK=0
 STATUS_ERROR=1
 
 M3U_FILENAME="chunks.m3u"
+OUTPUT_FILENAME="all.ts"
 
 ################################################################################
 
@@ -15,13 +16,20 @@ main() {
     fi
 
     local m3u_url="$1"
-    local base_url=$(get_base_url $m3u_url)
     local m3u_file="$M3U_FILENAME"
 
     echo "Downloading m3u file..."
     download_m3u_file "$m3u_url" "$m3u_file"
+
+    local base_url=$(get_base_url $m3u_url)
+
     echo "Downloading chunks..."
     download_chunks "$m3u_file" "$base_url"
+
+    local output_file="$OUTPUT_FILENAME"
+
+    echo "Writing to output file..."
+    write_output_file "$m3u_file" "$output_file"
 }
 
 download_m3u_file() {
@@ -33,7 +41,7 @@ download_m3u_file() {
     local m3u_url="$1"
     local m3u_file="$2"
 
-    wget -N -O "$m3u_file" "$m3u_url"
+    wget -O "$m3u_file" "$m3u_url"
 
     if [ $? != 0 ] ; then
         echo "Error: Could not download m3u file: $m3u_url"
@@ -56,6 +64,18 @@ download_chunks() {
     local base_url="$2"
 
     cat "$m3u_file" | grep -E "^[0-9]+(-muted)?.ts$" | xargs -I "{}" wget -N "$base_url/{}"
+}
+
+write_output_file() {
+    if [ $# != 2 ] ; then
+        echo "Error: Expected m3u filename and output filename, but was: $@"
+        exit $STATUS_ERROR
+    fi
+
+    local m3u_file="$1"
+    local output_file="$2"
+
+    cat "$m3u_file" | grep -E "^[0-9]+(-muted)?.ts$" | xargs cat > "$output_file"
 }
 
 get_base_url() {
