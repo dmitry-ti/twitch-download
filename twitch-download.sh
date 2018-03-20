@@ -63,7 +63,7 @@ download_chunks() {
     local m3u_file="$1"
     local base_url="$2"
 
-    cat "$m3u_file" | grep -E "^[0-9]+(-muted)?.ts$" | xargs -I "{}" wget -N "$base_url/{}"
+    cat "$m3u_file" | grep -E "^[0-9]+(-muted)?.ts$" | xargs -I "{}" wget -c "$base_url/{}"
 }
 
 write_output_file() {
