@@ -19,8 +19,12 @@ main() {
     echo "Downloading m3u file..."
     download_m3u_file "$m3u_url"
 
-    local m3u_file=$(get_filename_from_url $m3u_url)
-    local base_url=$(get_base_url $m3u_url)
+    local m3u_file=$(get_filename_from_url "$m3u_url")
+
+    echo "Validating m3u file..."
+    validate_m3u_file "$m3u_file"
+
+    local base_url=$(get_base_url "$m3u_url")
 
     echo "Downloading chunks..."
     download_chunks "$m3u_file" "$base_url"
@@ -43,6 +47,27 @@ download_m3u_file() {
 
     if [ $? != 0 ] ; then
         echo "Error: Could not download m3u file: $m3u_url"
+        exit $STATUS_ERROR
+    fi
+}
+
+validate_m3u_file() {
+    if [ $# != 1 ] ; then
+        echo "Error: Expected m3u filename, but was: $@"
+        exit $STATUS_ERROR
+    fi
+
+    local m3u_file="$1"
+
+    if [ ! -f "$m3u_file" ] ; then
+        echo "Error: Could not find m3u file: $m3u_file"
+        exit $STATUS_ERROR
+    fi
+
+    local header=$(head -n 1 "$m3u_file")
+
+    if [ "$header" != "#EXTM3U" ] ; then
+        echo "Error: m3u file validation failed: $m3u_file"
         exit $STATUS_ERROR
     fi
 }
