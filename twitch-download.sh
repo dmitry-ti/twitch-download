@@ -3,7 +3,6 @@
 STATUS_OK=0
 STATUS_ERROR=1
 
-M3U_FILENAME="chunks.m3u"
 OUTPUT_FILENAME="all.ts"
 
 ################################################################################
@@ -16,11 +15,11 @@ main() {
     fi
 
     local m3u_url="$1"
-    local m3u_file="$M3U_FILENAME"
 
     echo "Downloading m3u file..."
-    download_m3u_file "$m3u_url" "$m3u_file"
+    download_m3u_file "$m3u_url"
 
+    local m3u_file=$(get_filename_from_url $m3u_url)
     local base_url=$(get_base_url $m3u_url)
 
     echo "Downloading chunks..."
@@ -33,23 +32,17 @@ main() {
 }
 
 download_m3u_file() {
-    if [ $# != 2 ] ; then
-        echo "Error: Expected m3u url and filename, but was: $@"
-        return $STATUS_ERROR
-    fi
-
-    local m3u_url="$1"
-    local m3u_file="$2"
-
-    wget -O "$m3u_file" "$m3u_url"
-
-    if [ $? != 0 ] ; then
-        echo "Error: Could not download m3u file: $m3u_url"
+    if [ $# != 1 ] ; then
+        echo "Error: Expected m3u url, but was: $@"
         exit $STATUS_ERROR
     fi
 
-    if [ ! -f "$m3u_file" ]; then
-        echo "Error: Could not find downloaded m3u file: $m3u_file"
+    local m3u_url="$1"
+
+    wget -c "$m3u_url"
+
+    if [ $? != 0 ] ; then
+        echo "Error: Could not download m3u file: $m3u_url"
         exit $STATUS_ERROR
     fi
 }
@@ -64,6 +57,11 @@ download_chunks() {
     local base_url="$2"
 
     cat "$m3u_file" | grep -E "^[0-9]+(-muted)?.ts$" | xargs -I "{}" wget -c "$base_url/{}"
+
+    if [ $? != 0 ] ; then
+        echo "Error: Could not download chunks from file: $m3u_file and base url: $base_url"
+        exit $STATUS_ERROR
+    fi
 }
 
 write_output_file() {
@@ -76,12 +74,17 @@ write_output_file() {
     local output_file="$2"
 
     cat "$m3u_file" | grep -E "^[0-9]+(-muted)?.ts$" | xargs cat > "$output_file"
+
+    if [ $? != 0 ] ; then
+        echo "Error: Failed to write data to output file: $output_file"
+        exit $STATUS_ERROR
+    fi
 }
 
 get_base_url() {
     if [ $# != 1 ] ; then
         echo "Error: Expected url as argument, but was: $@"
-        return $STATUS_ERROR
+        exit $STATUS_ERROR
     fi
 
     local url="$1"
@@ -93,6 +96,23 @@ get_base_url() {
     fi
 
     echo "$base_url"
+}
+
+get_filename_from_url() {
+    if [ $# != 1 ] ; then
+        echo "Error: Expected url as argument, but was: $@"
+        exit $STATUS_ERROR
+    fi
+
+    local url="$1"
+    local filename="${url##*/}"
+
+    if [ $? != 0 ] ; then
+        echo "Error: Could not extract filename from url: $url"
+        exit $STATUS_ERROR
+    fi
+
+    echo "$filename"
 }
 
 ################################################################################
