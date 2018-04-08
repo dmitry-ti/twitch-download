@@ -81,7 +81,7 @@ download_chunks() {
     local m3u_file="$1"
     local base_url="$2"
 
-    cat "$m3u_file" | grep -E "^[0-9]+(-muted)?.ts$" | xargs -I "{}" wget -c "$base_url/{}"
+    cat "$m3u_file" | grep -v "^#" | xargs -I "{}" wget -c "$base_url/{}"
 
     if [ $? != 0 ] ; then
         echo "Error: Could not download chunks from file: $m3u_file and base url: $base_url"
