@@ -3,7 +3,8 @@
 STATUS_OK=0
 STATUS_ERROR=1
 
-OUTPUT_FILENAME="all.ts"
+TS_OUTPUT_FILENAME="all.ts"
+MKV_OUTPUT_FILENAME="stream.mkv"
 
 ################################################################################
 
@@ -29,10 +30,13 @@ main() {
     echo "Downloading chunks..."
     download_chunks "$m3u_file" "$base_url"
 
-    local output_file="$OUTPUT_FILENAME"
+    local output_file="$TS_OUTPUT_FILENAME"
 
     echo "Writing to output file..."
     write_output_file "$m3u_file" "$output_file"
+
+    #echo "Converting to mkv..."
+    #convert_ts_to_mkv "$output_file" "$MKV_OUTPUT_FILENAME"
 }
 
 download_m3u_file() {
@@ -43,7 +47,7 @@ download_m3u_file() {
 
     local m3u_url="$1"
 
-    wget -c "$m3u_url"
+    wget -N "$m3u_url"
 
     if [ $? != 0 ] ; then
         echo "Error: Could not download m3u file: $m3u_url"
@@ -104,6 +108,12 @@ write_output_file() {
         echo "Error: Failed to write data to output file: $output_file"
         exit $STATUS_ERROR
     fi
+}
+
+convert_ts_to_mkv() {
+    local ts_input_file="$1"
+    local mkv_output_file="$2"
+    ffmpeg -i "$ts_input_file" "$mkv_output_file"
 }
 
 get_base_url() {
