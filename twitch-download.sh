@@ -85,10 +85,27 @@ download_chunks() {
     local m3u_file="$1"
     local base_url="$2"
 
-    cat "$m3u_file" | grep -v "^#" | xargs -I "{}" wget -c "$base_url/{}"
-
+    export -f download_single_chunk
+    cat "$m3u_file" | grep -v "^#" | xargs -I "{}" bash -c "download_single_chunk \"$base_url/{}\""
+    
     if [ $? != 0 ] ; then
-        echo "Error: Could not download chunks from file: $m3u_file and base url: $base_url"
+        echo "Error: Could not finish dowloading"
+        exit $STATUS_ERROR
+    fi
+}
+
+download_single_chunk() {
+    if [ $# != 1 ] ; then
+        echo "Error: Expected chunk full url, but was: $@"
+        exit $STATUS_ERROR
+    fi
+    
+    local url="$1"
+
+    wget -c -nv "$url"
+    
+    if [ $? != 0 ] ; then
+        echo "Error: Could not download chunk: $url"
         exit $STATUS_ERROR
     fi
 }
