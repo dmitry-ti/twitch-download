@@ -102,10 +102,16 @@ download_single_chunk() {
     
     local url="$1"
 
-    wget -c -nv "$url"
+    printf "Downloading chunk: %s " $url
+    local message code
+    message="$(wget -c -nv $url 2>&1)"
+    code=$?
     
-    if [ $? != 0 ] ; then
-        echo "Error: Could not download chunk: $url"
+    if [ $code == 0 ] ; then
+        printf "OK\n"
+    else
+        printf "FAILED\n"
+        printf "%s %s\n" $code $message
         exit $STATUS_ERROR
     fi
 }
