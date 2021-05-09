@@ -125,6 +125,7 @@ write_output_file() {
     local m3u_file="$1"
     local output_file="$2"
 
+    rm -f "$output_file"
     cat "$m3u_file" | grep -E "^[0-9]+(-muted)?.ts$" | xargs cat > "$output_file"
 
     if [ $? != 0 ] ; then
