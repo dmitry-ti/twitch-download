@@ -47,12 +47,17 @@ processMediaSegment() {
   #echo "segment url: $segmentUrl"
   local segmentOutputName="$segmentNumber.ts"
   echo "downloading segment $segmentOutputName"
-  wget -O "$segmentOutputName" "$segmentUrl" > /dev/null
+  wget -O "$segmentOutputName" "$segmentUrl" &> /dev/null
   echo "$segmentOutputName" >> "output.m3u8"
 }
 
 main() {
   local channel="$1"
+  if [ -z "$channel" ]; then
+    echo "Error: channel name must be provided"
+    return
+  fi
+
   local access
   local token
   local masterPlaylist
@@ -63,6 +68,10 @@ main() {
 
   masterPlaylist=$(getMasterPlaylist "$channel")
   mediaPlaylistUrl=$(getMediaPlaylistUrl "$masterPlaylist")
+  if [ -z "$mediaPlaylistUrl" ]; then
+    echo "Error: Could not get media playlist url"
+    return
+  fi
 
   while true
   do
@@ -71,6 +80,10 @@ main() {
     mediaPlaylist=$(getMediaPlaylist "$mediaPlaylistUrl")
     targetDuration=$(getPlaylistTag "$mediaPlaylist" "EXT-X-TARGETDURATION")
     mediaSequence=$(getPlaylistTag "$mediaPlaylist" "EXT-X-MEDIA-SEQUENCE")
+    if [ -z "$mediaSequence" ]; then
+      echo "Error: Could not get media sequence"
+      return
+    fi
 
     echo "$mediaPlaylist" | grep -v "^#" | while IFS= read -r segmentUrl ; do processMediaSegment "$((mediaSequence++))" "$segmentUrl"; done
     
