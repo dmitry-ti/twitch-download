@@ -40,21 +40,30 @@ getPlaylistTag() {
 
 processMediaSegment() {
   local segmentNumber="$1"
-  if grep "^$segmentNumber.ts$" "$OUTPUT_PLAYLIST" &> /dev/null; then
+  if grep "^$segmentNumber.ts$" "$outputDir/$OUTPUT_PLAYLIST" &> /dev/null; then
     return
   fi
 
-  local segmentUrl="$2"
+  local outputDir="$3"
   local segmentOutputName="$segmentNumber.ts"
   echo "downloading segment $segmentOutputName"
-  wget -O "$segmentOutputName" "$segmentUrl" &> /dev/null
-  echo "$segmentOutputName" >> "output.m3u8"
+  local segmentUrl="$2"
+  wget -O "$outputDir/$segmentOutputName" "$segmentUrl" &> /dev/null
+  echo "$segmentOutputName" >> "$outputDir/$OUTPUT_PLAYLIST"
 }
 
 main() {
   local channel="$1"
   if [ -z "$channel" ]; then
     echo "Error: channel name must be provided"
+    return
+  fi
+
+  local outputDir
+  outputDir="${channel}_$(date +%Y-%m-%d_%H-%M-%S)"
+  mkdir "$outputDir"
+  if [ $? -ne 0 ] ; then
+    echo "Error: could not create output directory: $outputDir"
     return
   fi
 
@@ -88,7 +97,7 @@ main() {
       return
     fi
 
-    echo "$mediaPlaylist" | grep -v "^#" | while IFS= read -r segmentUrl ; do processMediaSegment "$((mediaSequence++))" "$segmentUrl"; done
+    echo "$mediaPlaylist" | grep -v "^#" | while IFS= read -r segmentUrl ; do processMediaSegment "$((mediaSequence++))" "$segmentUrl" "$outputDir"; done
     
     sleep "$targetDuration"
   done
